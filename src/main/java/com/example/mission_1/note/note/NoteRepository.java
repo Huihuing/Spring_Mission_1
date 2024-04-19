@@ -1,5 +1,10 @@
 package com.example.mission_1.note.note;
 
+import com.example.mission_1.note.notebook.Notebook;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface NoteRepository extends JpaRepository<Note, Long> {}
+import java.util.List;
+
+public interface NoteRepository extends JpaRepository<Note, Long> {
+    List<Note> findByNotebook(Notebook notebook);
+}
