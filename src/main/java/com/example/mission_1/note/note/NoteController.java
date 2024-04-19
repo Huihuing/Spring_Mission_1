@@ -1,5 +1,7 @@
 package com.example.mission_1.note.note;
 
+import com.example.mission_1.note.notebook.Notebook;
+import com.example.mission_1.note.notebook.NotebookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,38 +15,46 @@ import java.util.List;
 public class NoteController {
 
     private final NoteRepository noteRepository;
+    private final NotebookRepository notebookRepository;
 
-    @RequestMapping("/test")
-    @ResponseBody
-    public String test() {
-        return "test";
-    }
 
     @RequestMapping("/")
     public String main(Model model) {
+
+        List<Notebook> notebookList = notebookRepository.findAll();
+
+        if (notebookList.isEmpty()) {
+            Notebook notebook = new Notebook();
+            notebook.setName("새 노트");
+            notebookRepository.save(notebook);
+
+            return "redirect:/";
+        }
+        Notebook targetNotebook = notebookList.get(0);
         //1. DB에서 데이터 꺼내오기
         List<Note> noteList = noteRepository.findAll();
 
         if(noteList.isEmpty()) {
-            saveDefault();
+            saveDefault(targetNotebook);
             return "redirect:/";
         }
 
         //2. 꺼내온 데이터를 템플릿으로 보내기
         model.addAttribute("noteList", noteList);
         model.addAttribute("targetNote", noteList.get(0));
+        model.addAttribute("notebookList", notebookList);
+        model.addAttribute("targetNotebook", targetNotebook);
 
         return "mainForm";
     }
 
-    @PostMapping("/write")
-    public String write() {
-
-        saveDefault();
+    @PostMapping("books/{notebookId}/write")
+    public String write(@PathVariable("notebookId") Long notebookId) {
+        Notebook notebook = notebookRepository.findById(notebookId).orElseThrow();
+        saveDefault(notebook);
 
         return "redirect:/";
     }
-
     @GetMapping("/detail/{id}")
     public String detail(Model model, @PathVariable Long id) {
         Note note = noteRepository.findById(id).get();
@@ -75,11 +85,12 @@ public class NoteController {
         return "redirect:/";
     }
 
-    private Note saveDefault() {
+    private Note saveDefault(Notebook notebook) {
         Note note = new Note();
         note.setTitle("new title..");
         note.setContent("");
         note.setCreateDate(LocalDateTime.now());
+        note.setNotebook(notebook);
 
         return noteRepository.save(note);
     }
